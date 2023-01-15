@@ -1,4 +1,8 @@
 use clap::Parser;
+use reqwest::blocking;
+use std::env;
+use std::fs;
+use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -6,60 +10,79 @@ struct Args {
     #[arg(short)]
     action: String,
     #[arg(short)]
-    project_name: String
-    
+    project_name: String,
 }
 #[derive(Debug)]
 struct Project {
     name: String,
-    template_id: String
 }
+struct Translation {}
 #[derive(Debug)]
-struct TemplateInfo { 
+struct TemplateInfo {
     name: String,
     author: String,
     template_url: String,
-    
 }
-#[derive(Debug)] 
+#[derive(Debug)]
 struct Language {
     name: String,
-    country: String,
-    short_code: String
+    country_code: String,
+    language_code: String,
 }
 fn get_all_templates() -> Vec<TemplateInfo> {
     vec![
         TemplateInfo {
             name: String::from("Astra Theme 1"),
             author: String::from("Astra Theme Dev"),
-            template_url: String::from("this_does_not_exist")
+            template_url: String::from("this_does_not_exist"),
         },
         TemplateInfo {
             name: String::from("Astra Theme 2"),
             author: String::from("Astra Developers"),
-            template_url: String::from("template_url://")
-        }
+            template_url: String::from("template_url://"),
+        },
     ]
 }
-fn load_template_settings() -> TemplateInfo {
-    TemplateInfo {
-        name: String::from("Astra Theme 1"),
-        author: String::from("Jose Sanchez"),
-        template_url: String::from("https://github.com/jose-with-an-accent/base_theme")
-    }
-}
-fn new_project(name: &String) {
-    let template_location: String = String::from("template/"); // default project location
-    let output_location = String::from("build/"); // default output location
-    
 
-    println!("Creating new directory at {} with name {}", output_location, name);
+fn new_project(name: &String) {
+    let mut template_location = env::current_dir().unwrap();
+    println!("{:?}", &template_location);
+    template_location.push(format!("/{}", name));
+
+    match fs::create_dir(&template_location) {
+        Ok(..) => {
+            println!("Ok")
+        }
+        Err(error) => {
+            println!("There was an error creating the directory: {}", error)
+        }
+    }
+    init_project(&mut template_location);
+}
+
+fn init_project(path: &mut PathBuf) {
+    let i18n_enabled = true;
+
+    if i18n_enabled {
+        let i18n_file_path = path.clone();
+        path.push("/i18n");
+
+        let languages = vec!["en", "es"];
+
+        for language in languages {
+            let mut language_file_path = i18n_file_path.clone();
+            language_file_path.push(format!("/{}.json", language));
+            println!("{:?}", &language_file_path);
+
+            fs::write(language_file_path, "{}");
+        }
+    }
 
     let available_templates = get_all_templates();
 
     println!("All templates:");
     for (i, template) in available_templates.iter().enumerate() {
-        println!("#{}: {}", i, &template.name);       
+        println!("#{}: {}", i, &template.name);
     }
     let chosen = 1; // replace this by code to determine chosen one
 
@@ -70,34 +93,28 @@ fn new_project(name: &String) {
 fn deploy_project() {
     println!("Select a service to deploy")
 }
-fn update_i18n() {
-    
-}
+fn update_i18n() {}
 fn view_projects() {
-    println!("All Projects");
-    let projects: Vec<Project> = vec![];
+    let current_project = Project {
+        name: String::from("Default Project"),
+    };
 
-    for project in projects {
-        println!("{} - Last updated {}", &project.name, "November 7, 2022")
-    }
+    println!("Current project: {}", current_project.name);
+    // let last_updated_cloud = get_last_updated_cloud()
+    println!("Last updated: ")
 }
 fn main() {
-    
     let args = Args::parse();
 
     match args.action.as_str() {
-        "projects" => view_projects(),
-        "new" => {
-            new_project(&args.project_name);
+        "project" => view_projects(),
+        "init" => {
+            let mut path = env::current_dir().unwrap();
+            init_project(&mut path);
         }
-        "deploy" => {
-            // this will connect to a certain backend and deploy the project from there
-            deploy_project();
-        }
-        "i18n" => {
-            update_i18n();
-        }
-        &_ => panic!("unknown value for argument")
-        
+        "new" => new_project(&args.project_name),
+        "deploy" => deploy_project(),
+        "i18n" => update_i18n(),
+        &_ => panic!("unknown value for argument"),
     };
 }
