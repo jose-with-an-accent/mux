@@ -1,0 +1,4 @@
+name: Astra Web
+features: 
+- i18n_enabled
+- box_enabled

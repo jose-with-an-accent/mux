@@ -1,0 +1,10 @@
+template_name = Basic Template 1
+includes_html = [
+]
+
+[nav]
+pages: "true"
+
+[i18n.en]
+APP_NAME: Scooby's Emporium
+APP_HEADING: Generate an website with pre-included code
